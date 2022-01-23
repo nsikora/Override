@@ -1,8 +1,13 @@
-On a un printf qui lit nos arguments.
+En lisant le code, on peut se rendre compte de plusieurs choses.
 
-On peux taper %p pour afficher les pointeurs contenus dans le programme grâce à l'utilisation d'un printf non sécurisé.
+- Un read vient lire le contenu d'un fichier contenant le mot de passe.
+- Un printf est utilisé quelque sinstructions plus tard.
 
-On spamme les %p où on nous demande notre username avec la commande au moment:
+La présence de ce printf nous permettra d'exploiter l'utilisation de printf afin de pouvoir afficher ce qui est lu en mémoire, comme par exemple le
+contenu de notre read().
+
+On peux taper %p pour afficher les pointeurs contenus dans le programme grâce à l'utilisation de ce printf non sécurisé.
+Lorsque le programme nous demande de taper notre login, on va spammer les %p pour afficher ce qui est contenu en mémoire dans notre programme, ce qui donne le résultat suivant:
 
 ```
 level02@OverRide:~$ ./level02

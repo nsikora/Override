@@ -33,6 +33,9 @@ Nos chaînes hexadécimales non répétées ont pour valeur:
 Assembler ces chaines de caractères comporte le même nombre de caractère que nos deux derniers flags.
 On peut alors raisonnablement penser qu'une combinaison de ces chaînes représente un flag.
 
-Après plusieurs tentatives de combinaison, on se rend compte pour lire le flag,  on lit les var à l'envers et on reverse (little endian)
+Après plusieurs tentatives de combinaison, on se rend compte que pour lire le flag, on doit lire les chaînes de caractère de la dernière vers la première,
+et en inversant l'ordre des caractères qu'elles contiennent individuellement (little endian)
+
+Ce qui nous donne le flag:
 
 Hh74RPnuQ9sa5JAEXgNWCqz7sXGnh5J5M9KfPg3H

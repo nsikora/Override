@@ -18,12 +18,21 @@ level02@OverRide:~$ ./level02
 --[ Username: %p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p.%p
 ```
 
+On observe alors la présence des valeurs hexadécimales , en plus de valeurs hexadécimales répétées.
+Le site suivnat nous permet de les déchiffrer:https://string-functions.com/hex-string.aspx
+
+Les valeurs hexadécimales répétées ont pour valeur les chaines "%p.%p."
+Nos chaînes hexadécimales non répétées ont pour valeur:
+
 756e505234376848 (unPR47hH)
 45414a3561733951 (EAJ5as9Q)
 377a7143574e6758 (7zqCWNgX)
 354a35686e475873 (5J5hnGXs)
 48336750664b394d (H3gPfK9M)
 
-Soluce: on lit les var à l'envers et on reverse (little endian)
+Assembler ces chaines de caractères comporte le même nombre de caractère que nos deux derniers flags.
+On peut alors raisonnablement penser qu'une combinaison de ces chaînes représente un flag.
+
+Après plusieurs tentatives de combinaison, on se rend compte pour lire le flag,  on lit les var à l'envers et on reverse (little endian)
 
 Hh74RPnuQ9sa5JAEXgNWCqz7sXGnh5J5M9KfPg3H
